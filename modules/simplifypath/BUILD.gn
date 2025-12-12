@@ -36,6 +36,7 @@ skia_wasm_lib("simplifypath") {
     "-sALLOW_MEMORY_GROWTH",
     "-sINITIAL_MEMORY=32MB",
     "-sMODULARIZE",
+    "-sEXPORT_ES6=1",
     "-sDISABLE_EXCEPTION_CATCHING",
     "-sNODEJS_CATCH_EXIT=0",
     "-sWASM",
