@@ -6,6 +6,7 @@
  */
 
 #include "include/core/SkPath.h"
+#include "include/core/SkPathTypes.h"
 #include "include/core/SkString.h"
 #include "include/utils/SkParsePath.h"
 #include "include/pathops/SkPathOps.h"
@@ -38,9 +39,9 @@ SkPathOrNull MakePathFromSVGString(std::string str) {
     return emscripten::val::null();
 }
 
-// Helper function to simplify an SVG path string and return the simplified string
-JSString SimplifySvgPathString(std::string str) {
+JSString SimplifySvgPathString(std::string str, SkPathFillType fillType) {
     if (auto path = SkParsePath::FromSVGString(str.c_str())) {
+        path->setFillType(fillType);
         if (auto simplified = Simplify(*path)) {
             return emscripten::val(SkParsePath::ToSVGString(simplified.value()).c_str());
         }
@@ -48,17 +49,28 @@ JSString SimplifySvgPathString(std::string str) {
     return emscripten::val::null();
 }
 
+JSString SimplifySvgPathStringDefault(std::string str) {
+    return SimplifySvgPathString(str, SkPathFillType::kWinding);
+}
+
 // =================================================================================
 // Bindings
 // =================================================================================
 
 EMSCRIPTEN_BINDINGS(SimplifyPath) {
-    function("simplifySvgPath", &SimplifySvgPathString);
+    function("simplifySvgPath", &SimplifySvgPathStringDefault);
+    function("_simplifySvgPathWithFillType", &SimplifySvgPathString);
     
     class_<SkPath>("Path")
             .constructor<>()
             .class_function("MakeFromSVGString", &MakePathFromSVGString)
             .function("toSVGString", &ToSVGString)
             .function("_makeSimplified", &MakeSimplified)
+            .function("setFillType", &SkPath::setFillType)
+            .function("getFillType", &SkPath::getFillType)
             ;
+
+    enum_<SkPathFillType>("FillType")
+            .value("Winding", SkPathFillType::kWinding)
+            .value("EvenOdd", SkPathFillType::kEvenOdd);
 }
