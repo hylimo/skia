@@ -1,0 +1,53 @@
+# Copyright 2020 Google Inc.
+#
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+import("../../gn/skia.gni")
+import("../../gn/toolchain/wasm.gni")
+
+skia_wasm_lib("simplifypath") {
+  deps = [
+    "../..:skia",
+    "../..:pathops",
+  ]
+
+  sources = [
+    "WasmCommon.h",
+    "path_simplify_bindings.cpp",
+  ]
+
+  ldflags = []
+  if (is_debug) {
+    ldflags += [
+      "-O0",
+      "-sASSERTIONS=1",
+      "-g3",
+    ]
+  } else {
+    ldflags += [ "-Oz" ]
+  }
+  ldflags += [
+    "-fno-rtti",
+    "--bind",
+  ]
+
+  ldflags += [
+    "-sEXPORT_NAME=SimplifySvgPathInit",
+    "-sALLOW_MEMORY_GROWTH",
+    "-sINITIAL_MEMORY=32MB",
+    "-sMODULARIZE",
+    "-sDISABLE_EXCEPTION_CATCHING",
+    "-sNODEJS_CATCH_EXIT=0",
+    "-sWASM",
+    "-sFORCE_FILESYSTEM=0",
+    "-sDYNAMIC_EXECUTION=0",
+    "-sFILESYSTEM=0",
+    "--pre-js",
+    rebase_path("pathops.js"),
+  ]
+
+  defines = [
+    "CK_INCLUDE_PATHOPS",
+    "EMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0",
+  ]
+}

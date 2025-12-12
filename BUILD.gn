@@ -1963,7 +1963,10 @@ group("modules") {
   ]
 
   if (is_wasm) {
-    deps += [ "modules/canvaskit" ]
+    deps += [
+      "modules/canvaskit",
+      "modules/simplifypath",
+    ]
   }
 }
 

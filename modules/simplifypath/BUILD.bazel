@@ -1,0 +1,86 @@
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@skia_user_config//:copts.bzl", "DEFAULT_COPTS")
+load("//bazel:macros.bzl", "wasm_cc_binary")
+
+package(
+    default_applicable_licenses = ["//:license"],
+)
+
+licenses(["notice"])
+
+BASE_LINKOPTS = [
+    "--bind",  # Compiles the source code using the Embind bindings to connect C/C++ and JavaScript
+    "-fno-rtti",
+    "--no-entry",
+    "-sALLOW_MEMORY_GROWTH",
+    "-sMODULARIZE",
+    "-sDISABLE_EXCEPTION_CATCHING",  # Disable all exception catching
+    "-sNODEJS_CATCH_EXIT=0",  # We don't have a 'main' so disable exit() catching
+    "-sWASM",
+    "-sFORCE_FILESYSTEM=0",
+    "-sDYNAMIC_EXECUTION=0",
+    "-sFILESYSTEM=0",
+    "-sEXPORTED_FUNCTIONS=['_malloc','_free']",
+    "-sEXPORTED_RUNTIME_METHODS=HEAP32,HEAPU8,HEAPU16,HEAPU32,HEAPF32",
+    "-sINCOMING_MODULE_JS_API=onRuntimeInitialized,locateFile",
+]
+
+RELEASE_OPTS = [
+    "-sASSERTIONS=0",  # Turn off assertions
+    "-Oz",
+]
+
+DEBUG_OPTS = [
+    "--closure 0",  # Do not use closure
+    "-sASSERTIONS",  # Turn on assertions
+    "-O0",
+    "-g3",
+]
+
+PS_DEFINES = [
+    "CK_INCLUDE_PATHOPS",
+    "EMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0",  # Allows us to compile with -fno-rtti
+]
+
+PS_LINKOPTS = BASE_LINKOPTS + [
+    "-sEXPORT_NAME=SimplifyPathInit",
+    "-sINITIAL_MEMORY=32MB",
+    "--pre-js",
+    "modules/simplifypath/pathops.js",
+] + select({
+    "//bazel/common_config_settings:debug_build": DEBUG_OPTS,
+    "//conditions:default": RELEASE_OPTS,
+})
+
+JS_INTERFACE_FILES = [
+    "pathops.js",
+]
+
+PS_SRCS = [
+    "path_simplify_bindings.cpp",
+    "WasmCommon.h",
+]
+
+PS_COPTS = [
+    "-Wno-header-hygiene",
+]
+
+cc_binary(
+    name = "simplifypath.build",
+    srcs = PS_SRCS,
+    additional_linker_inputs = JS_INTERFACE_FILES,
+    copts = DEFAULT_COPTS + PS_COPTS,
+    linkopts = PS_LINKOPTS,
+    local_defines = PS_DEFINES,
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//:skia_public",
+    ],
+)
+
+wasm_cc_binary(
+    name = "simplifypath",
+    cc_target = ":simplifypath.build",
+    # Whatever features we use must be included on https://caniuse.com/wasm
+    wasm_features = ["simd"],
+)
