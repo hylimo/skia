@@ -5,6 +5,16 @@
 import("../../gn/skia.gni")
 import("../../gn/toolchain/wasm.gni")
 
+declare_args() {
+  # The emscripten `ENVIRONMENT` value baked into the generated JS glue.
+  #
+  # The glue is environment specific: as soon as `node` is part of the list it reaches
+  # for `module`, `fs`, `path` and `url`, which bundlers targeting the browser cannot
+  # resolve. Every supported environment therefore gets its own build directory and its
+  # own entry point in the npm package, see modules/simplifypath/compile.sh.
+  simplifypath_environment = "web,webview,worker,node"
+}
+
 skia_wasm_lib("simplifypath") {
   deps = [
     "../..:skia",
@@ -32,6 +42,7 @@ skia_wasm_lib("simplifypath") {
   ]
 
   ldflags += [
+    "-sENVIRONMENT=$simplifypath_environment",
     "-sEXPORT_NAME=SimplifySvgPathInit",
     "-sALLOW_MEMORY_GROWTH",
     "-sINITIAL_MEMORY=32MB",

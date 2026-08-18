@@ -16,9 +16,15 @@ This module is a stripped-down version of CanvasKit, containing only the essenti
 ./compile.sh
 ```
 
-Output files will be in `../../out/simplifypath_wasm/`:
-- `simplifypath.js` - JavaScript loader
-- `simplifypath.wasm` - WebAssembly binary
+The module is built once per target environment, because emscripten bakes the environment
+detection and the matching module loading code into the generated JS glue. Output files
+will be in `../../out/simplifypath_wasm/<environment>/`, one directory per entry of
+`VARIANTS` in `compile.sh`:
+
+- `simplifypath.js` - JavaScript loader, specific to the environment
+- `simplifypath.wasm` - WebAssembly binary, identical across environments
+
+The environment is passed to the build through the `simplifypath_environment` GN argument.
 
 ## Files
 
